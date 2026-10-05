@@ -1,0 +1,44 @@
+{
+  "name": "Joke Fetcher & Email Preview",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "joke-preview", "responseMode": "lastNode" },
+      "id": "j1111111-1a40-420a-8eb8-42289c8a923d",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [ 200, 300 ]
+    },
+    {
+      "parameters": { "url": "https://v2.jokeapi.dev/joke/Any?safe-mode" },
+      "id": "j2222222-6e65-4d2d-a193-4e3f4db3c448",
+      "name": "Fetch Joke API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [ 420, 300 ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nlet formattedJoke = data.type === 'twopart' \n  ? `${data.setup}\\n\\n${data.delivery}` \n  : data.joke;\n\nreturn [{ \n  json: { \n    subject: \"Your Daily Joke\",\n    htmlBody: `<h1>Joke of the Day</h1><p>${formattedJoke.replace(/\\n/g, '<br>')}</p>`\n  } \n}];"
+      },
+      "id": "j3333333-d98c-4a37-9755-e8d1de11175b",
+      "name": "Format JSON & Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [ 620, 300 ]
+    },
+    {
+      "parameters": { "fromEmail": "YOUR_EMAIL@domain.com", "toEmail": "={{ $('Webhook').item.json.body.recipient }}", "subject": "={{ $json.subject }}", "html": "={{ $json.htmlBody }}" },
+      "id": "j4444444-d98c-4a37-9755-e8d1de11175b",
+      "name": "Email Preview / Send",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [ 820, 300 ]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [ [ { "node": "Fetch Joke API", "type": "main", "index": 0 } ] ] },
+    "Fetch Joke API": { "main": [ [ { "node": "Format JSON & Email", "type": "main", "index": 0 } ] ] },
+    "Format JSON & Email": { "main": [ [ { "node": "Email Preview / Send", "type": "main", "index": 0 } ] ] }
+  }
+}
