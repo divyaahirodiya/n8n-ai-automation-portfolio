@@ -1,0 +1,56 @@
+{
+  "name": "Social Content Creator",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "create-social", "responseMode": "onReceived" },
+      "id": "s1111111-1a40-420a-8eb8-42289c8a923d",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [ 200, 300 ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write exactly 3 distinct tweet-length posts about this topic. Separate each post with \"|||\".\n\nTopic: {{ $json.body.topic }}"
+      },
+      "id": "s2222222-6e65-4d2d-a193-4e3f4db3c448",
+      "name": "Generate Posts",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1,
+      "position": [ 420, 300 ]
+    },
+    {
+      "parameters": { "model": "llama3-8b-8192" },
+      "id": "s3333333-b251-419b-ab29-fbe937b4b1a4",
+      "name": "Groq LLM",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [ 420, 500 ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const posts = $input.first().json.text.split('|||');\nreturn posts.map(post => ({ json: { post: post.trim() } })).filter(i => i.json.post.length > 0);"
+      },
+      "id": "s4444444-d98c-4a37-9755-e8d1de11175b",
+      "name": "Split Posts Array",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [ 620, 300 ]
+    },
+    {
+      "parameters": { "chatId": "YOUR_TELEGRAM_CHANNEL_ID", "text": "={{ $json.post }}" },
+      "id": "s5555555-d98c-4a37-9755-e8d1de11175b",
+      "name": "Telegram Publisher",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [ 820, 300 ]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [ [ { "node": "Generate Posts", "type": "main", "index": 0 } ] ] },
+    "Groq LLM": { "ai_languageModel": [ [ { "node": "Generate Posts", "type": "ai_languageModel", "index": 0 } ] ] },
+    "Generate Posts": { "main": [ [ { "node": "Split Posts Array", "type": "main", "index": 0 } ] ] },
+    "Split Posts Array": { "main": [ [ { "node": "Telegram Publisher", "type": "main", "index": 0 } ] ] }
+  }
+}
