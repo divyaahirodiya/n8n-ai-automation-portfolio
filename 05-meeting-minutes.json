@@ -1,0 +1,56 @@
+{
+  "name": "AI Meeting Minutes Extractor",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "meeting-minutes", "responseMode": "lastNode" },
+      "id": "m1111111-1a40-420a-8eb8-42289c8a923d",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [ 200, 300 ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Extract a structured summary and action items (with assignees) from this transcript. Output ONLY valid JSON in this format: {\"summary\": \"...\", \"action_items\": [{\"task\": \"...\", \"assignee\": \"...\"}]}.\n\nTranscript: {{ $json.body.transcript }}"
+      },
+      "id": "m2222222-6e65-4d2d-a193-4e3f4db3c448",
+      "name": "Basic LLM Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1,
+      "position": [ 420, 300 ]
+    },
+    {
+      "parameters": { "model": "llama3-8b-8192" },
+      "id": "m3333333-b251-419b-ab29-fbe937b4b1a4",
+      "name": "Groq LLM",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [ 420, 500 ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const responseText = $input.first().json.text;\nlet parsedData = {};\ntry {\n  parsedData = JSON.parse(responseText);\n} catch(e) {\n  parsedData = { error: \"Failed to parse JSON\", raw: responseText };\n}\nreturn [{ json: parsedData }];"
+      },
+      "id": "m4444444-d98c-4a37-9755-e8d1de11175b",
+      "name": "Parse JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [ 620, 300 ]
+    },
+    {
+      "parameters": { "operation": "append", "documentId": { "__rl": true, "value": "YOUR_SHEET_ID", "mode": "id" }, "sheetName": { "__rl": true, "value": "Minutes", "mode": "name" }, "columns": { "mappingMode": "autoMapInputData" } },
+      "id": "m5555555-d98c-4a37-9755-e8d1de11175b",
+      "name": "Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [ 820, 300 ]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [ [ { "node": "Basic LLM Chain", "type": "main", "index": 0 } ] ] },
+    "Groq LLM": { "ai_languageModel": [ [ { "node": "Basic LLM Chain", "type": "ai_languageModel", "index": 0 } ] ] },
+    "Basic LLM Chain": { "main": [ [ { "node": "Parse JSON", "type": "main", "index": 0 } ] ] },
+    "Parse JSON": { "main": [ [ { "node": "Google Sheets", "type": "main", "index": 0 } ] ] }
+  }
+}
