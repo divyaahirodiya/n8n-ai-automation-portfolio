@@ -1,0 +1,54 @@
+{
+  "name": "Daily News Summarizer (Gemini)",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [ { "field": "days", "daysInterval": 1 } ] } },
+      "id": "n1111111-1a40-420a-8eb8-42289c8a923d",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [ 200, 300 ]
+    },
+    {
+      "parameters": { "url": "https://api.apitube.io/v1/news?category=technology&limit=5", "authentication": "genericCredentialType" },
+      "id": "n2222222-6e65-4d2d-a193-4e3f4db3c448",
+      "name": "Fetch APITube News",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [ 420, 300 ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Summarize these headlines into 3 key bullet points.\n\nNews Data: {{ JSON.stringify($json.data) }}"
+      },
+      "id": "n3333333-b251-419b-ab29-fbe937b4b1a4",
+      "name": "Summarize News",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1,
+      "position": [ 620, 300 ]
+    },
+    {
+      "parameters": { "model": "gemini-pro" },
+      "id": "n4444444-b251-419b-ab29-fbe937b4b1a4",
+      "name": "Google Gemini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [ 620, 500 ]
+    },
+    {
+      "parameters": { "operation": "append", "documentId": { "__rl": true, "value": "YOUR_SHEET_ID", "mode": "id" }, "sheetName": { "__rl": true, "value": "DailyNews", "mode": "name" }, "columns": { "mappingMode": "defineBelow", "value": { "Date": "={{ $now }}", "Summary": "={{ $json.text }}" } } },
+      "id": "n5555555-d98c-4a37-9755-e8d1de11175b",
+      "name": "Log to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [ 820, 300 ]
+    }
+  ],
+  "connections": {
+    "Schedule": { "main": [ [ { "node": "Fetch APITube News", "type": "main", "index": 0 } ] ] },
+    "Fetch APITube News": { "main": [ [ { "node": "Summarize News", "type": "main", "index": 0 } ] ] },
+    "Google Gemini": { "ai_languageModel": [ [ { "node": "Summarize News", "type": "ai_languageModel", "index": 0 } ] ] },
+    "Summarize News": { "main": [ [ { "node": "Log to Sheets", "type": "main", "index": 0 } ] ] }
+  }
+}
