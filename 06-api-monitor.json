@@ -1,0 +1,58 @@
+{
+  "name": "HTTP API Monitoring & Alerting",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [ { "field": "minutes", "minutesInterval": 5 } ] } },
+      "id": "p1111111-1a40-420a-8eb8-42289c8a923d",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [ 200, 300 ]
+    },
+    {
+      "parameters": { "url": "https://api.yoursite.com/health", "options": { "response": { "response": { "fullResponse": true } } } },
+      "id": "p2222222-6e65-4d2d-a193-4e3f4db3c448",
+      "name": "Ping API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [ 420, 300 ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [ { "id": "1", "leftValue": "={{ $json.statusCode }}", "rightValue": 200, "operator": { "type": "number", "operation": "notEqual" } } ], "combinator": "and" }, "renameOutput": true, "outputKey": "DOWN" },
+            { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [ { "id": "2", "leftValue": "={{ $json.headers['x-response-time'] }}", "rightValue": 2000, "operator": { "type": "number", "operation": "larger" } } ], "combinator": "and" }, "renameOutput": true, "outputKey": "SLOW" }
+          ]
+        },
+        "fallbackOutput": 2
+      },
+      "id": "p3333333-b251-419b-ab29-fbe937b4b1a4",
+      "name": "Evaluate Severity",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [ 620, 300 ]
+    },
+    {
+      "parameters": { "channel": "alerts", "text": "=🚨 URGENT: API is DOWN! Status Code: {{ $json.statusCode }}" },
+      "id": "p4444444-d98c-4a37-9755-e8d1de11175b",
+      "name": "Slack Alert (DOWN)",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [ 860, 200 ]
+    },
+    {
+      "parameters": { "channel": "alerts", "text": "=⚠️ WARNING: API is SLOW! Response Time exceeds 2000ms." },
+      "id": "p5555555-d98c-4a37-9755-e8d1de11175b",
+      "name": "Slack Alert (SLOW)",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [ 860, 400 ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [ [ { "node": "Ping API", "type": "main", "index": 0 } ] ] },
+    "Ping API": { "main": [ [ { "node": "Evaluate Severity", "type": "main", "index": 0 } ] ] },
+    "Evaluate Severity": { "main": [ [ { "node": "Slack Alert (DOWN)", "type": "main", "index": 0 } ], [ { "node": "Slack Alert (SLOW)", "type": "main", "index": 0 } ] ] }
+  }
+}
