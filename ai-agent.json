@@ -1,0 +1,57 @@
+{
+  "name": "AI Research Agent (Groq + Wikipedia)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-research",
+        "responseMode": "lastNode"
+      },
+      "id": "e9b251fc-1a40-420a-8eb8-42289c8a923d",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [ 240, 300 ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.question }}"
+      },
+      "id": "87556f87-6e65-4d2d-a193-4e3f4db3c448",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1,
+      "position": [ 460, 300 ]
+    },
+    {
+      "parameters": {
+        "model": "llama3-8b-8192"
+      },
+      "id": "c62db6f4-b251-419b-ab29-fbe937b4b1a4",
+      "name": "Groq Llama 3",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [ 420, 520 ]
+    },
+    {
+      "parameters": {},
+      "id": "2bc352c6-d98c-4a37-9755-e8d1de11175b",
+      "name": "Wikipedia Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolWikipedia",
+      "typeVersion": 1,
+      "position": [ 560, 520 ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [ [ { "node": "AI Agent", "type": "main", "index": 0 } ] ]
+    },
+    "Groq Llama 3": {
+      "ai_languageModel": [ [ { "node": "AI Agent", "type": "ai_languageModel", "index": 0 } ] ]
+    },
+    "Wikipedia Tool": {
+      "ai_tool": [ [ { "node": "AI Agent", "type": "ai_tool", "index": 0 } ] ]
+    }
+  }
+}
