@@ -1,0 +1,61 @@
+{
+  "name": "AI Support Ticket Classifier",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "support-ticket", "responseMode": "lastNode" },
+      "id": "d1111111-1a40-420a-8eb8-42289c8a923d",
+      "name": "Webhook POST",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [ 200, 300 ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Classify this message into: Billing, Technical, Feature Request, or General Inquiry. Only return the category name.\n\nMessage: {{ $json.body.message }}"
+      },
+      "id": "d2222222-6e65-4d2d-a193-4e3f4db3c448",
+      "name": "Basic LLM Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1,
+      "position": [ 420, 300 ]
+    },
+    {
+      "parameters": { "model": "llama3-8b-8192" },
+      "id": "d3333333-b251-419b-ab29-fbe937b4b1a4",
+      "name": "Groq LLM",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [ 420, 500 ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [ { "id": "1", "leftValue": "={{ $json.text }}", "rightValue": "Billing", "operator": { "type": "string", "operation": "contains" } } ], "combinator": "and" }, "renameOutput": true, "outputKey": "Billing" }
+          ]
+        },
+        "fallbackOutput": 1
+      },
+      "id": "d4444444-d98c-4a37-9755-e8d1de11175b",
+      "name": "Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [ 620, 300 ]
+    },
+    {
+      "parameters": { "operation": "append", "documentId": { "__rl": true, "value": "YOUR_SHEET_ID", "mode": "id" }, "sheetName": { "__rl": true, "value": "Billing", "mode": "name" }, "columns": { "mappingMode": "autoMapInputData" } },
+      "id": "d5555555-d98c-4a37-9755-e8d1de11175b",
+      "name": "Google Sheets (Billing)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [ 860, 200 ]
+    }
+  ],
+  "connections": {
+    "Webhook POST": { "main": [ [ { "node": "Basic LLM Chain", "type": "main", "index": 0 } ] ] },
+    "Groq LLM": { "ai_languageModel": [ [ { "node": "Basic LLM Chain", "type": "ai_languageModel", "index": 0 } ] ] },
+    "Basic LLM Chain": { "main": [ [ { "node": "Switch", "type": "main", "index": 0 } ] ] },
+    "Switch": { "main": [ [ { "node": "Google Sheets (Billing)", "type": "main", "index": 0 } ] ] }
+  }
+}
