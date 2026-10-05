@@ -1,0 +1,89 @@
+{
+  "name": "RAG Knowledge Base Pipeline",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "d748f323-95c5-4d1a-85d9-45bc4d7f5a54",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [ 240, 300 ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.query }}"
+      },
+      "id": "670f5e8f-4318-450e-b072-fb59f0f9b60b",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1,
+      "position": [ 460, 300 ]
+    },
+    {
+      "parameters": {
+        "model": "llama3-8b-8192"
+      },
+      "id": "5f9f688e-1768-4a57-b016-3e7e1f76d49f",
+      "name": "Groq Llama 3",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [ 400, 520 ]
+    },
+    {
+      "parameters": {},
+      "id": "802c6b45-2197-4b71-b2c6-ea95b8d234a9",
+      "name": "In-Memory Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1,
+      "position": [ 560, 520 ]
+    },
+    {
+      "parameters": {},
+      "id": "1e75ff35-5dbd-4251-b0db-6e695d8f6153",
+      "name": "Document Loader (PDF)",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [ 720, 700 ]
+    },
+    {
+      "parameters": {
+        "chunkSize": 1000,
+        "chunkOverlap": 100
+      },
+      "id": "a4d3b6f2-8c11-4b14-8f44-93e18cf5d9c2",
+      "name": "Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [ 860, 860 ]
+    },
+    {
+      "parameters": {},
+      "id": "d1a7b8e5-56f7-41ab-bc93-a5e2fcfb8175",
+      "name": "Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1,
+      "position": [ 560, 700 ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [ [ { "node": "AI Agent", "type": "main", "index": 0 } ] ]
+    },
+    "Groq Llama 3": {
+      "ai_languageModel": [ [ { "node": "AI Agent", "type": "ai_languageModel", "index": 0 } ] ]
+    },
+    "In-Memory Vector Store": {
+      "ai_tool": [ [ { "node": "AI Agent", "type": "ai_tool", "index": 0 } ] ]
+    },
+    "Embeddings": {
+      "ai_embedding": [ [ { "node": "In-Memory Vector Store", "type": "ai_embedding", "index": 0 } ] ]
+    },
+    "Document Loader (PDF)": {
+      "ai_document": [ [ { "node": "In-Memory Vector Store", "type": "ai_document", "index": 0 } ] ]
+    },
+    "Text Splitter": {
+      "ai_textSplitter": [ [ { "node": "Document Loader (PDF)", "type": "ai_textSplitter", "index": 0 } ] ]
+    }
+  }
+}
