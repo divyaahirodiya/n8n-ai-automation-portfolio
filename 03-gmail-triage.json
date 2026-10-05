@@ -1,0 +1,63 @@
+{
+  "name": "Smart Gmail Email Triage",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [ { "mode": "everyMinute" } ]
+        },
+        "filters": { "labelIds": [ "INBOX" ], "readStatus": "unread" }
+      },
+      "id": "a7b3b42c-567a-4d2d-b193-4e3f4db3c448",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [ 200, 300 ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Classify this email into 'Finance', 'Urgent', or 'General'. Reply ONLY with one of these words.\n\nEmail content:\n{{ $json.snippet }}"
+      },
+      "id": "e45b6f87-6e65-4d2d-a193-4e3f4db3c555",
+      "name": "Basic LLM Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1,
+      "position": [ 420, 300 ]
+    },
+    {
+      "parameters": { "model": "llama3-8b-8192" },
+      "id": "c62db6f4-b251-419b-ab29-fbe937b4b333",
+      "name": "Groq Llama 3",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [ 420, 500 ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [ { "id": "1", "leftValue": "={{ $json.text }}", "rightValue": "Finance", "operator": { "type": "string", "operation": "contains" } } ], "combinator": "and" } },
+            { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" }, "conditions": [ { "id": "2", "leftValue": "={{ $json.text }}", "rightValue": "Urgent", "operator": { "type": "string", "operation": "contains" } } ], "combinator": "and" } }
+          ]
+        }
+      },
+      "id": "3bc452c6-d98c-4a37-9755-e8d1de111666",
+      "name": "Switch Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [ 640, 300 ]
+    }
+  ],
+  "connections": {
+    "Gmail Trigger": {
+      "main": [ [ { "node": "Basic LLM Chain", "type": "main", "index": 0 } ] ]
+    },
+    "Groq Llama 3": {
+      "ai_languageModel": [ [ { "node": "Basic LLM Chain", "type": "ai_languageModel", "index": 0 } ] ]
+    },
+    "Basic LLM Chain": {
+      "main": [ [ { "node": "Switch Router", "type": "main", "index": 0 } ] ]
+    }
+  }
+}
